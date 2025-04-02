@@ -1,116 +1,75 @@
-"use client";
 import { useState } from "react";
+import { Loader, X } from "lucide-react";
 
-interface NewExamFormProps {
-  readonly onClose: () => void;
-  readonly onSubmit: (exam: {
-    patientName: string;
-    examType: string;
-    doctor: string;
-    technician?: string;
-    date: Date;
-    status: "pending" | "in_progress" | "completed";
-  }) => void;
+interface Props {
+  onClose: () => void;
 }
 
-export default function NewExamForm({ onClose, onSubmit }: NewExamFormProps) {
+export default function NewExamForm({ onClose }: Props) {
   const [formData, setFormData] = useState({
     patientName: "",
     examType: "",
     doctor: "",
     technician: "",
-    date: new Date().toISOString().slice(0, 10),
-    status: "pending",
+    date: "",
+    status: "Pending",
   });
 
+  const [loading, setLoading] = useState(false);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
-      patientName: formData.patientName,
-      examType: formData.examType,
-      doctor: formData.doctor,
-      technician: formData.technician || undefined,
-      date: new Date(formData.date),
-      status: formData.status as "pending" | "in_progress" | "completed",
-    });
-    onClose(); // Ferme le formulaire après soumission
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/ajouter_demande_examen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) throw new Error("Échec de l'ajout");
+
+      alert("✅ Examen ajouté avec succès !");
+      onClose();
+    } catch (error) {
+      alert("❌ Erreur lors de l'ajout !");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Nouvel Examen</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            name="patientName"
-            value={formData.patientName}
-            onChange={handleChange}
-            placeholder="Nom du patient"
-            required
-            className="w-full border rounded-lg px-3 py-2 text-blue-500"
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {["patientName", "examType", "doctor", "technician"].map((field) => (
+        <div key={field}>
+          <label className="block text-blue-600 font-semibold">{field.replace(/([A-Z])/g, " $1")}</label>
+          <input 
+            type="text" 
+            name={field} 
+            value={formData[field]} 
+            onChange={handleChange} 
+            className="w-full p-2 border rounded-lg focus:ring text-black focus:ring-blue-400" 
+            required 
           />
-          <input
-            type="text"
-            name="examType"
-            value={formData.examType}
-            onChange={handleChange}
-            placeholder="Type d'examen"
-            required
-            className="w-full border rounded-lg px-3 py-2  text-blue-500"
-          />
-          <input
-            type="text"
-            name="doctor"
-            value={formData.doctor}
-            onChange={handleChange}
-            placeholder="Médecin"
-            required
-            className="w-full border rounded-lg px-3 py-2  text-blue-500"
-          />
-          <input
-            type="text"
-            name="technician"
-            value={formData.technician}
-            onChange={handleChange}
-            placeholder="Technicien (optionnel)"
-            className="w-full border rounded-lg px-3 py-2  text-blue-500"
-          />
-          <input
-            type="date"
-            name="date"
-            value={formData.date}
-            onChange={handleChange}
-            required
-            className="w-full border rounded-lg px-3 py-2  text-blue-500"
-          />
-          <select
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            className="w-full border rounded-lg px-3 py-2  text-blue-500"
-          >
-            <option value="pending">En attente</option>
-            <option value="in_progress">En cours</option>
-            <option value="completed">Terminé</option>
-          </select>
-          <div className="flex justify-end space-x-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 bg-black rounded-lg">
-              Annuler
-            </button>
-            <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg">
-              Ajouter
-            </button>
-          </div>
-        </form>
+        </div>
+      ))}
+      <div>
+        <label className="block text-blue-600 font-semibold">Date</label>
+        <input type="date" name="date" value={formData.date} onChange={handleChange} className="w-full p-2 border rounded-lg focus:ring text-black focus:ring-blue-400" required />
       </div>
-    </div>
+      <div className="flex justify-end space-x-2">
+        <button type="button" className="px-4 py-2 bg-red-500 text-white rounded-lg flex items-center" onClick={onClose}>
+          <X className="w-4 h-4 mr-1" /> Annuler
+        </button>
+        <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center">
+          {loading ? <Loader className="w-4 h-4 animate-spin mr-1" /> : "Ajouter"}
+        </button>
+      </div>
+    </form>
   );
 }

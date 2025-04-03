@@ -1,7 +1,7 @@
 export type ExamStatus = "En attente" | "En cours" | "Terminé";
 
 export interface Exam {
-  id: string;
+  _id: string;
   patientName: string;
   examType: string;
   doctor: string;

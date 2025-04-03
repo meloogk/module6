@@ -92,10 +92,10 @@ export default function ExamList() {
 
       {/* Modal d'ajout */}
       {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-30">
+        <div className="fixed inset-0 flex items-center justify-center bg-white bg-opacity-30">
           <div className="bg-white p-6 rounded-lg shadow-lg w-1/3">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-gray-700">Ajouter un Examen</h3>
+              <h3 className="text-xl font-semibold text-gray-700">NOUVELLE DEMANDE D&apos;EXAMEN / ANALYSES</h3>
               <button className="text-gray-500 hover:text-gray-700" onClick={() => setShowModal(false)}>
                 <X className="w-6 h-6" />
               </button>

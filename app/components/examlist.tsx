@@ -20,7 +20,7 @@ export default function ExamList() {
   useEffect(() => {
     const fetchExams = async () => {
       try {
-        const response = await fetch("/api/recuperer_liste_examens");
+        const response = await fetch("/api/recuperer_liste_examen");
         if (!response.ok) throw new Error("Erreur API");
         const data = await response.json();
         setExams(data.data);
@@ -36,11 +36,11 @@ export default function ExamList() {
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
-      case "pending":
+      case "En cours":
         return <Clock className="text-yellow-500" />;
-      case "approved":
+      case "Terminé":
         return <CheckCircle className="text-green-500" />;
-      case "rejected":
+      case "En attente":
         return <X className="text-red-500" />;
       default:
         return <Clock className="text-gray-500" />;
@@ -77,11 +77,11 @@ export default function ExamList() {
             <tbody>
               {exams.map((exam) => (
                 <tr key={exam._id} className="border-b hover:bg-gray-50">
-                  <td className="p-3">{exam.patientName}</td>
-                  <td className="p-3">{exam.examType}</td>
-                  <td className="p-3">{exam.doctor}</td>
-                  <td className="p-3">{exam.technician}</td>
-                  <td className="p-3">{new Date(exam.date).toLocaleDateString()}</td>
+                  <td className="p-3 text-black fw-bold">{exam.patientName}</td>
+                  <td className="p-3 text-red-500">{exam.examType}</td>
+                  <td className="p-3 text-green-500">{exam.doctor}</td>
+                  <td className="p-3 text-blue-500">{exam.technician}</td>
+                  <td className="p-3 text-yellow-500">{new Date(exam.date).toLocaleDateString()}</td>
                   <td className="p-3 text-center">{getStatusBadge(exam.status)}</td>
                 </tr>
               ))}

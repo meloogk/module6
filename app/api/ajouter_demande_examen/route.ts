@@ -1,38 +1,34 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import { NextResponse } from "next/server";
 import { DBConnect } from "@/data/mongoose";
 import { ExamModel } from "@/models/exam";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ success: false, message: "Méthode non autorisée" });
-  }
-
-  await DBConnect();
-
+export const POST = async (req: Request) => {
   try {
-    const { patientName, examType, doctor, technician, date, status } = req.body;
+    const { patientName, examType, doctor, technician, date, status } = await req.json();
+    const db = await DBConnect();
 
-    // Validation des champs obligatoires
-    if (!patientName || !examType || !doctor || !technician || !date) {
-      return res.status(400).json({ success: false, message: "Tous les champs sont requis" });
+    if (db === "ok") {
+      const newExam = new ExamModel({
+        patientName,
+        examType,
+        doctor,
+        technician,
+        date,
+        status: status || "En attente",
+      });
+
+      await newExam.save();
+
+      if (newExam) {
+        return NextResponse.json({ message: "ok", data: newExam });
+      } else {
+        return NextResponse.json({ message: "Veuillez remplir correctement tous les champs !" });
+      }
+    } else {
+      return NextResponse.json({ message: "Erreur de connexion à la base de donnée !" });
     }
-
-    // Création du nouvel examen
-    const newExam = new ExamModel({
-      patientName,
-      examType,
-      doctor,
-      technician,
-      date,
-      status: status || "En attente", // Valeur par défaut si le statut n'est pas fourni
-    });
-
-    // Enregistrement dans la base de données
-    await newExam.save();
-
-    return res.status(201).json({ success: true, message: "Examen ajouté avec succès", data: newExam });
   } catch (error) {
-    console.error("Erreur lors de l'ajout de l'examen:", error);
-    return res.status(500).json({ success: false, message: "Erreur lors de l'ajout de l'examen", error: error.message });
+    console.error(error);
+    return NextResponse.json({ message: "Erreur serveur", error: `${error}` }, { status: 500 });
   }
-}
+};

@@ -26,22 +26,30 @@ export default function NewExamForm({ onClose }: Readonly<Props>) {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/ajouter_demande_examen", {
+      const req = await fetch("/api/ajouter_demande_examen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
-      if (!response.ok) throw new Error("Échec de l'ajout");
+      const res = await req.json()
 
-      alert("✅ Examen ajouté avec succès !");
-      onClose();
+      if (res.message === "ok") {
+        alert("Examen ajouté avec succès !");
+        onClose();
+      } else {
+        console.log("Échec de l'ajout")
+      }
+
     } catch (error) {
-      alert("❌ Erreur lors de l'ajout !");
+      // Utilisation de `error` pour afficher un message dans la console
+      console.error("Erreur lors de l'ajout de l'examen :", error);
+      alert("Erreur lors de l'ajout !");
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="bg-white shadow-xl rounded-xl p-6 max-w-md w-full mx-auto">

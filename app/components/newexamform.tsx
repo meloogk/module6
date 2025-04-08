@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Loader, X, CheckCircle } from "lucide-react";
 
+// Ajout de onSubmit à Props
 interface Props {
   onClose: () => void;
+  onSubmit: (exam: { patientName: string, examType: string, doctor: string, technician: string, date: string, status: string }) => void;  // Définir le type de exam
 }
 
-export default function NewExamForm({ onClose }: Readonly<Props>) {
+export default function NewExamForm({ onClose, onSubmit }: Readonly<Props>) {
   const [formData, setFormData] = useState({
     patientName: "",
     examType: "",
@@ -32,24 +34,22 @@ export default function NewExamForm({ onClose }: Readonly<Props>) {
         body: JSON.stringify(formData),
       });
 
-      const res = await req.json()
+      const res = await req.json();
 
       if (res.message === "ok") {
         alert("Examen ajouté avec succès !");
+        onSubmit(formData);  // Appel de onSubmit avec les données du formulaire
         onClose();
       } else {
-        console.log("Échec de l'ajout")
+        console.log("Échec de l'ajout");
       }
-
     } catch (error) {
-      // Utilisation de `error` pour afficher un message dans la console
       console.error("Erreur lors de l'ajout de l'examen :", error);
       alert("Erreur lors de l'ajout !");
     } finally {
       setLoading(false);
     }
   };
-
 
   return (
     <div className="bg-white shadow-xl rounded-xl p-6 max-w-md w-full mx-auto">

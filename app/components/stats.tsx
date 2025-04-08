@@ -1,62 +1,62 @@
-"use client";
-import { useEffect, useState } from "react";
-import { Users, ClipboardList, Activity, Hourglass } from "lucide-react"; 
+import { CheckCircle, Clock, Hourglass } from "lucide-react";
 
-const statsConfig = [
-  { icon: Users, label: "Patients du Jour", key: "patientsToday" },
-  { icon: ClipboardList, label: "Examens en Cours", key: "examsInProgress" },
-  { icon: Activity, label: "Examens Terminés", key: "examsCompleted" },
-  { icon: Hourglass, label: "Examens en Attente", key: "examsPending" }, 
-];
+interface StatsProps {
+  readonly exams: {
+    status: string;
+  }[];
+  readonly onFilterChange: (status: string | null) => void;
+  readonly activeFilter: string | null;
+}
 
-export default function Stats() {
-  const [stats, setStats] = useState({
-    patientsToday: 0,
-    examsInProgress: 0,
-    examsCompleted: 0,
-    examsPending: 0, 
-  });
-  const [loading, setLoading] = useState(true);
+export default function Stats({ exams, onFilterChange, activeFilter }: StatsProps) {
+  const getCount = (status: string | null) => {
+    if (status) {
+      return exams.filter((e) => e.status.toLowerCase() === status.toLowerCase()).length;
+    }
+    return exams.length; 
+  };
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await fetch("/api/statistiques");
-        if (!response.ok) throw new Error("Erreur serveur");
-        const data = await response.json();
-        setStats(data);
-      } catch (error) {
-        console.error("Erreur lors du chargement des statistiques :", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
+  const statuses = [
+    { label: "En attente", icon: <Hourglass className="text-red-500" />, color: "red-100" },
+    { label: "En cours", icon: <Clock className="text-yellow-500" />, color: "yellow-100" },
+    { label: "Terminé", icon: <CheckCircle className="text-green-500" />, color: "green-100" },
+  ];
+//fonction pour le filtre
+  const toggleFilter = (status: string) => {
+    if (activeFilter === status) {
+      onFilterChange(null); 
+    } else {
+      onFilterChange(status); 
+    }
+  };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"> {/* Passer à 4 colonnes pour afficher 4 statistiques */}
-      {loading ? (
-        <div className="col-span-4 text-center py-12">
-          <div className="spinner-border animate-spin inline-block w-12 h-12 border-4 border-solid rounded-full border-indigo-600 border-t-transparent" />
-          <p className="text-gray-500 mt-4">Chargement des statistiques...</p>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      {/* Carte Nombre total de patients */}
+      <div className="bg-gray-100 p-4 rounded-lg shadow-md flex justify-between items-center border">
+        <div>
+          <p className="text-lg font-bold text-black">{getCount(null)}</p>
+          <p className="text-sm text-gray-700">Nombre total de patients</p>
         </div>
-      ) : (
-        statsConfig.map(({ icon: Icon, label, key }) => (
-          <div key={key} className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <Icon className="h-8 w-8 text-indigo-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">{label}</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {stats[key as keyof typeof stats]}
-                </p>
-              </div>
-            </div>
+      </div>
+
+      {/* Cartes de statut */}
+      {statuses.map(({ label, icon, color }) => (
+        <button
+          key={label}
+          type="button" 
+          className={`bg-${color} p-4 rounded-lg shadow-md flex justify-between items-center transition border ${
+            activeFilter === label ? "ring-2 ring-blue-500" : ""
+          }`}
+          onClick={() => toggleFilter(label)}
+        >
+          <div>
+            <p className="text-lg font-bold text-black">{getCount(label)}</p>
+            <p className="text-sm text-gray-700">{label}</p>
           </div>
-        ))
-      )}
+          {icon}
+        </button>
+      ))}
     </div>
   );
 }

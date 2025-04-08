@@ -1,21 +1,15 @@
 import { useEffect, useState } from "react";
-import { PlusCircle, X, CheckCircle, Clock } from "lucide-react";
+import { PlusCircle, X, CheckCircle, Clock, Hourglass } from "lucide-react";
 import NewExamForm from "./newexamform";
+import { Exam } from "@/type"; 
 
-interface Exam {
-  _id: string;
-  patientName: string;
-  examType: string;
-  doctor: string;
-  technician: string;
-  date: string;
-  status: string;
-}
+
 
 export default function ExamList() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<string>("");
 
   useEffect(() => {
     const fetchExams = async () => {
@@ -35,27 +29,64 @@ export default function ExamList() {
   }, []);
 
   const getStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "En cours":
+    const lowerStatus = status.toLowerCase();
+    switch (lowerStatus) {
+      case "en cours":
         return <Clock className="text-yellow-500" />;
-      case "Terminé":
+      case "terminé":
         return <CheckCircle className="text-green-500" />;
-      case "En attente":
-        return <X className="text-red-500" />;
+      case "en attente":
+        return <Hourglass className="text-red-500" />;
       default:
-        return <Clock className="text-gray-500" />;
+        return <X className="text-gray-500" />;
     }
   };
+
+  const handleFilterClick = (status: string) => {
+    setSelectedStatus(status);
+  };
+
+  const filteredExams = selectedStatus
+    ? exams.filter((exam) => exam.status.toLowerCase() === selectedStatus.toLowerCase())
+    : exams;
 
   return (
     <div className="max-w-5xl mx-auto mt-8 bg-white shadow-md rounded-lg p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold text-gray-800">Liste des examens</h2>
-        <button 
+        <button
           className="flex items-center bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition"
           onClick={() => setShowModal(true)}
         >
           <PlusCircle className="w-5 h-5 mr-2" /> Ajouter un Examen
+        </button>
+      </div>
+
+      {/* Filtrage par statut */}
+      <div className="flex space-x-4 mb-4">
+        <button
+          onClick={() => handleFilterClick("en cours")}
+          className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600"
+        >
+          En cours
+        </button>
+        <button
+          onClick={() => handleFilterClick("terminé")}
+          className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+        >
+          Terminé
+        </button>
+        <button
+          onClick={() => handleFilterClick("en attente")}
+          className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+        >
+          En attente
+        </button>
+        <button
+          onClick={() => setSelectedStatus("")}
+          className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+        >
+          Tout afficher
         </button>
       </div>
 
@@ -75,7 +106,7 @@ export default function ExamList() {
               </tr>
             </thead>
             <tbody>
-              {exams.map((exam) => (
+              {filteredExams.map((exam) => (
                 <tr key={exam._id} className="border-b hover:bg-gray-50">
                   <td className="p-3 text-black fw-bold">{exam.patientName}</td>
                   <td className="p-3 text-red-500">{exam.examType}</td>
@@ -100,7 +131,8 @@ export default function ExamList() {
                 <X className="w-6 h-6" />
               </button>
             </div>
-            <NewExamForm onClose={() => setShowModal(false)} />
+            <NewExamForm onClose={() => setShowModal(false)} onSubmit={() => {}} />
+
           </div>
         </div>
       )}

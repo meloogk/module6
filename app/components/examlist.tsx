@@ -1,15 +1,39 @@
 import { useEffect, useState } from "react";
 import { PlusCircle, X, CheckCircle, Clock, Hourglass } from "lucide-react";
 import NewExamForm from "./newexamform";
-import { Exam } from "@/type"; 
-
-
+import { Exam, ExamStatus } from "@/type"; // Assurez-vous que 'ExamStatus' est importé comme une énumération
 
 export default function ExamList() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
+
+  // Fonction pour mettre à jour le statut d'un examen
+  const updateExamStatus = async (id: string, nouveauStatut: ExamStatus) => {
+    try {
+      const res = await fetch("/api/modifier_status_examen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, nouveauStatut }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // Mise à jour de l'UI après succès
+        setExams((prevExams) =>
+          prevExams.map((exam) =>
+            exam._id === id ? { ...exam, status: nouveauStatut } : exam
+          )
+        );
+      } else {
+        console.error("Erreur API :", data.message);
+      }
+    } catch (error) {
+      console.error("Erreur réseau :", error);
+    }
+  };
 
   useEffect(() => {
     const fetchExams = async () => {
@@ -28,14 +52,25 @@ export default function ExamList() {
     fetchExams();
   }, []);
 
-  const getStatusBadge = (status: string) => {
-    const lowerStatus = status.toLowerCase();
-    switch (lowerStatus) {
-      case "en cours":
+  // Extraction de la logique de changement de statut
+  const getNextStatus = (currentStatus: ExamStatus) => {
+    switch (currentStatus) {
+      case ExamStatus.EN_ATTENTE:
+        return ExamStatus.EN_COURS;
+      case ExamStatus.EN_COURS:
+        return ExamStatus.TERMINE;
+      default:
+        return ExamStatus.EN_ATTENTE;
+    }
+  };
+
+  const getStatusBadge = (status: ExamStatus) => {
+    switch (status) {
+      case ExamStatus.EN_COURS:
         return <Clock className="text-yellow-500" />;
-      case "terminé":
+      case ExamStatus.TERMINE:
         return <CheckCircle className="text-green-500" />;
-      case "en attente":
+      case ExamStatus.EN_ATTENTE:
         return <Hourglass className="text-red-500" />;
       default:
         return <X className="text-gray-500" />;
@@ -67,24 +102,28 @@ export default function ExamList() {
         <button
           onClick={() => handleFilterClick("en cours")}
           className="px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600"
+          type="button"
         >
           En cours
         </button>
         <button
           onClick={() => handleFilterClick("terminé")}
           className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+          type="button"
         >
           Terminé
         </button>
         <button
           onClick={() => handleFilterClick("en attente")}
           className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+          type="button"
         >
           En attente
         </button>
         <button
           onClick={() => setSelectedStatus("")}
           className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+          type="button"
         >
           Tout afficher
         </button>
@@ -113,7 +152,19 @@ export default function ExamList() {
                   <td className="p-3 text-green-500">{exam.doctor}</td>
                   <td className="p-3 text-blue-500">{exam.technician}</td>
                   <td className="p-3 text-yellow-500">{new Date(exam.date).toLocaleDateString()}</td>
-                  <td className="p-3 text-center">{getStatusBadge(exam.status)}</td>
+                  <td className="p-3 text-center">
+                    <button
+                      className="cursor-pointer"
+                      onClick={() => {
+                        const nextStatus = getNextStatus(exam.status);
+                        updateExamStatus(exam._id, nextStatus);
+                      }}
+                      type="button"
+                      aria-label="Modifier le statut"
+                    >
+                      {getStatusBadge(exam.status)}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -127,12 +178,16 @@ export default function ExamList() {
           <div className="bg-white p-6 rounded-lg shadow-lg w-1/3">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold text-gray-700">NOUVELLE DEMANDE D&apos;EXAMEN / ANALYSES</h3>
-              <button className="text-gray-500 hover:text-gray-700" onClick={() => setShowModal(false)}>
+              <button
+                className="text-gray-500 hover:text-gray-700"
+                onClick={() => setShowModal(false)}
+                type="button"
+                aria-label="Fermer le modal"
+              >
                 <X className="w-6 h-6" />
               </button>
             </div>
             <NewExamForm onClose={() => setShowModal(false)} onSubmit={() => {}} />
-
           </div>
         </div>
       )}

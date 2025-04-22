@@ -63,7 +63,7 @@ export default function NewExamForm({ onClose, onSubmit }: Readonly<Props>) {
 
       if (res.message === "ok") {
         alert("Examen ajouté avec succès !");
-        onSubmit(formData);  // Appel de onSubmit avec les données du formulaire
+        onSubmit(formData);  
         onClose();
       } else {
         console.log("Échec de l'ajout");
@@ -116,7 +116,7 @@ export default function NewExamForm({ onClose, onSubmit }: Readonly<Props>) {
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 transition text-gray-800"
             required
           >
-            <option value="">Sélectionnez un type d'examen</option>
+            <option value="">Sélectionnez un type d&apos;examen</option>
             {examTypes.map((exam) => (
               <option key={exam} value={exam}>
                 {exam}

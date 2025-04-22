@@ -6,13 +6,13 @@ import {
   Clock,
   Hourglass,
   UploadCloud,
-  EyeOff,
   Send,
   Repeat2,
-  LucideIcon,
 } from "lucide-react";
 import NewExamForm from "./newexamform";
 import { Exam, ExamStatus } from "@/type";
+import UploadForm from "./upload_resultats";
+import ActionButton from "./bouton_actions";
 
 export default function ExamList() {
   const [exams, setExams] = useState<Exam[]>([]);
@@ -20,6 +20,7 @@ export default function ExamList() {
   const [showModal, setShowModal] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [resultsUploaded, setResultsUploaded] = useState<{ [key: string]: boolean }>({});
+  const [showUploadForm, setShowUploadForm] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -80,12 +81,6 @@ export default function ExamList() {
     }
   };
 
-  const handleResultsUpload = (id: string) => {
-    setResultsUploaded((prev) => ({ ...prev, [id]: true }));
-  };
-  const handleHideResults = (id: string) => {
-    setResultsUploaded((prev) => ({ ...prev, [id]: false }));
-  };
   const handleSendResults = (id: string) => {
     console.log("Envoyer résultats pour :", id);
   };
@@ -93,34 +88,6 @@ export default function ExamList() {
   const filtered = selectedStatus
     ? exams.filter((e) => e.status.toLowerCase() === selectedStatus.toLowerCase())
     : exams;
-
-  const ActionButton = ({
-    onClick,
-    icon: Icon,
-    color,
-    title,
-  }: {
-    onClick: () => void;
-    icon: LucideIcon;
-    color: "indigo" | "blue" | "gray" | "green";
-    title: string;
-  }) => {
-    const colorMap: Record<string, string> = {
-      indigo: "bg-indigo-500 hover:bg-indigo-600",
-      blue: "bg-blue-500 hover:bg-blue-600",
-      gray: "bg-gray-500 hover:bg-gray-600",
-      green: "bg-green-500 hover:bg-green-600",
-    };
-    return (
-      <button
-        onClick={onClick}
-        title={title}
-        className={`p-1.5 rounded-full text-white transition ${colorMap[color]}`}
-      >
-        <Icon className="w-4 h-4" />
-      </button>
-    );
-  };
 
   return (
     <div className="max-w-5xl mx-auto mt-8 bg-white shadow rounded-lg p-6">
@@ -135,18 +102,20 @@ export default function ExamList() {
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        {[{ label: "En cours", key: "en cours", col: "yellow" },
-          { label: "Terminé", key: "terminé", col: "green" },
-          { label: "En attente", key: "en attente", col: "red" }
-        ].map(({ label, key, col }) => (
-          <button
-            key={key}
-            onClick={() => setSelectedStatus(key)}
-            className={`px-3 py-1 text-sm text-white bg-${col}-500 rounded hover:bg-${col}-600 transition`}
-          >
-            {label}
-          </button>
-        ))}
+      {[
+  { label: "En cours", key: "en cours", bg: "bg-yellow-500", hover: "hover:bg-yellow-600" },
+  { label: "Terminé", key: "terminé", bg: "bg-green-500", hover: "hover:bg-green-600" },
+  { label: "En attente", key: "en attente", bg: "bg-red-500", hover: "hover:bg-red-600" },
+].map(({ label, key, bg, hover }) => (
+  <button
+    key={key}
+    onClick={() => setSelectedStatus(key)}
+    className={`px-3 py-1 text-sm text-white rounded transition ${bg} ${hover}`}
+  >
+    {label}
+  </button>
+))}
+
         <button
           onClick={() => setSelectedStatus("")}
           className="px-3 py-1 text-sm text-white bg-gray-500 rounded hover:bg-gray-600 transition"
@@ -178,12 +147,16 @@ export default function ExamList() {
                   <td className="p-3 text-red-600">{exam.examType}</td>
                   <td className="p-3 text-green-600">{exam.doctor}</td>
                   <td className="p-3 text-blue-600">{exam.technician}</td>
-                  <td className="p-3 text-black">{new Date(exam.date).toLocaleDateString()}</td>
+                  <td className="p-3 text-black">
+                    {new Date(exam.date).toLocaleDateString()}
+                  </td>
                   <td className="p-3 text-center">{getStatusBadge(exam.status)}</td>
                   <td className="p-3 text-center flex gap-2 justify-center">
                     {exam.status !== ExamStatus.TERMINE && (
                       <ActionButton
-                        onClick={() => updateExamStatus(exam._id, getNextStatus(exam.status))}
+                        onClick={() =>
+                          updateExamStatus(exam._id, getNextStatus(exam.status))
+                        }
                         icon={Repeat2}
                         color="indigo"
                         title="Changer le statut"
@@ -193,26 +166,33 @@ export default function ExamList() {
                       <>
                         {!resultsUploaded[exam._id] ? (
                           <ActionButton
-                            onClick={() => handleResultsUpload(exam._id)}
+                            onClick={() => setShowUploadForm(exam._id)}
                             icon={UploadCloud}
                             color="blue"
                             title="Uploader résultats"
                           />
                         ) : (
                           <ActionButton
-                            onClick={() => handleHideResults(exam._id)}
-                            icon={EyeOff}
-                            color="gray"
-                            title="Masquer résultats"
+                            onClick={() => handleSendResults(exam._id)}
+                            icon={Send}
+                            color="green"
+                            title="Envoyer résultats"
                           />
                         )}
-                        <ActionButton
-                          onClick={() => handleSendResults(exam._id)}
-                          icon={Send}
-                          color="green"
-                          title="Envoyer résultats"
-                        />
                       </>
+                    )}
+                    {showUploadForm === exam._id && (
+                      <UploadForm
+                        examId={exam._id}
+                        onClose={() => setShowUploadForm(null)}
+                        onSuccess={() => {
+                          setResultsUploaded((prev) => ({
+                            ...prev,
+                            [exam._id]: true,
+                          }));
+                          setShowUploadForm(null);
+                        }}
+                      />
                     )}
                   </td>
                 </tr>

@@ -2,7 +2,7 @@ import mongoose, { Schema } from "mongoose";
 
 const ExamSchema = new Schema({
   patientName: { type: String, required: true },
-  examType: { type: String, required: true },
+  examType: { type: [String], required: true },
   doctor: { type: String, required: true },
   technician: { type: String, required: true },
   status: {type: String,required: true,

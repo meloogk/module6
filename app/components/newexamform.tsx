@@ -24,23 +24,28 @@ export default function NewExamForm({ onClose, onSubmit }: Readonly<Props>) {
   });
 
   const [loading, setLoading] = useState(false);
-  const [examTypes, setExamTypes] = useState<string[]>([]); // État pour les types d'examen
-  const [error, setError] = useState<string>("");
+  const [examTypes, setExamTypes] = useState<{ _id: string; name: string }[]>([]);
+  const [error, setError] = useState("");
 
-  // Récupérer les types d'examen depuis l'API
   useEffect(() => {
     async function fetchExamTypes() {
       try {
-        const response = await fetch("/api/types_analyses_medicales");
-        if (!response.ok) {
-          throw new Error("Erreur lors de la récupération des types d'examen");
+        const response = await fetch("/api/recuperer_types_analyses");
+        if (!response.ok) throw new Error("Erreur lors de la récupération");
+
+        const result = await response.json();
+
+        if (Array.isArray(result.data)) {
+          setExamTypes(result.data);
+        } else {
+          throw new Error("Format inattendu des types d'examen");
         }
-        const data = await response.json();
-        setExamTypes(data.data); // Assurez-vous que la structure correspond
       } catch (err) {
-        setError("Erreur lors de la récupération des types d'examen");
+        console.error(err);
+        setError("Impossible de charger les types d'examen.");
       }
     }
+
     fetchExamTypes();
   }, []);
 
@@ -50,27 +55,32 @@ export default function NewExamForm({ onClose, onSubmit }: Readonly<Props>) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.examType) {
+      setError("Veuillez sélectionner un type d'examen.");
+      return;
+    }
+
     setLoading(true);
+    setError("");
 
     try {
-      const req = await fetch("/api/ajouter_demande_examen", {
+      const response = await fetch("/api/ajouter_demande_examen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
-      const res = await req.json();
+      const result = await response.json();
 
-      if (res.message === "ok") {
-        alert("Examen ajouté avec succès !");
-        onSubmit(formData);  
+      if (result.message === "ok") {
+        onSubmit(formData);
         onClose();
       } else {
-        console.log("Échec de l'ajout");
+        setError("Échec de l'ajout de l'examen.");
       }
-    } catch (error) {
-      console.error("Erreur lors de l'ajout de l'examen :", error);
-      alert("Erreur lors de l'ajout !");
+    } catch (err) {
+      console.error(err);
+      setError("Erreur réseau ou serveur.");
     } finally {
       setLoading(false);
     }
@@ -82,10 +92,10 @@ export default function NewExamForm({ onClose, onSubmit }: Readonly<Props>) {
         Ajouter un Nouvel Examen
       </h2>
 
-      {error && <div className="text-red-500 text-center">{error}</div>}
+      {error && <div className="text-red-600 text-sm text-center mb-2">{error}</div>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Patient Name */}
+        {/* Nom du patient */}
         <div>
           <label htmlFor="patientName" className="block text-gray-700 font-medium">
             Nom du Patient
@@ -97,13 +107,12 @@ export default function NewExamForm({ onClose, onSubmit }: Readonly<Props>) {
             value={formData.patientName}
             onChange={handleChange}
             placeholder="Entrez le nom du patient"
-            title="Nom du patient"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 transition text-gray-800"
             required
+            className="w-full p-3 border border-gray-300 rounded-lg text-black focus:ring-2 focus:ring-blue-400"
           />
         </div>
 
-        {/* Exam Type */}
+        {/* Type d'examen */}
         <div>
           <label htmlFor="examType" className="block text-gray-700 font-medium">
             Type d&apos;examen
@@ -113,19 +122,17 @@ export default function NewExamForm({ onClose, onSubmit }: Readonly<Props>) {
             name="examType"
             value={formData.examType}
             onChange={handleChange}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 transition text-gray-800"
             required
+            className="w-full p-3 border border-gray-300   text-black rounded-lg focus:ring-2 focus:ring-blue-400"
           >
-            <option value="">Sélectionnez un type d&apos;examen</option>
+            <option value="">-- Sélectionnez un type --</option>
             {examTypes.map((exam) => (
-              <option key={exam} value={exam}>
-                {exam}
-              </option>
+              <option key={exam._id} value={exam.name}>{exam.name}</option>
             ))}
           </select>
         </div>
 
-        {/* Doctor */}
+        {/* Médecin */}
         <div>
           <label htmlFor="doctor" className="block text-gray-700 font-medium">
             Médecin
@@ -137,13 +144,12 @@ export default function NewExamForm({ onClose, onSubmit }: Readonly<Props>) {
             value={formData.doctor}
             onChange={handleChange}
             placeholder="Nom du médecin"
-            title="Nom du médecin"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 transition text-gray-800"
             required
+            className="w-full p-3 border border-gray-300 rounded-lg   text-black focus:ring-2 focus:ring-blue-400"
           />
         </div>
 
-        {/* Technician */}
+        {/* Technicien */}
         <div>
           <label htmlFor="technician" className="block text-gray-700 font-medium">
             Technicien
@@ -155,9 +161,8 @@ export default function NewExamForm({ onClose, onSubmit }: Readonly<Props>) {
             value={formData.technician}
             onChange={handleChange}
             placeholder="Nom du technicien"
-            title="Nom du technicien"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 transition text-gray-800"
             required
+            className="w-full p-3 border border-gray-300   text-black rounded-lg focus:ring-2 focus:ring-blue-400"
           />
         </div>
 
@@ -172,24 +177,24 @@ export default function NewExamForm({ onClose, onSubmit }: Readonly<Props>) {
             name="date"
             value={formData.date}
             onChange={handleChange}
-            title="Date de l'examen"
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-400 transition text-gray-800"
             required
+            className="w-full p-3 border border-gray-300  text-black  rounded-lg focus:ring-2 focus:ring-blue-400"
           />
         </div>
 
-        {/* Buttons */}
-        <div className="flex justify-end space-x-2 mt-4">
+        {/* Boutons */}
+        <div className="flex justify-end space-x-2 pt-2">
           <button
             type="button"
-            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center transition"
             onClick={onClose}
+            className="flex items-center bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition"
           >
             <X className="w-4 h-4 mr-1" /> Annuler
           </button>
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center transition"
+            className="flex items-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition"
+            disabled={loading}
           >
             {loading ? (
               <Loader className="w-4 h-4 animate-spin mr-1" />
